@@ -134,7 +134,7 @@ update_basic_vars(tableau_t * tableau, int leaving, int entering) {
 
 // Single simplex iteration. If soln is optimum, will return same table
 tableau_t *
-simplex (tableau_t * tableau) {
+simplex_iteration (tableau_t * tableau) {
   int entering_var = check_optimum(tableau);
   int leaving_idx = mrt(tableau, entering_var);
 
@@ -149,6 +149,89 @@ simplex (tableau_t * tableau) {
   update_basic_vars(tableau, leaving_idx, entering_var);
 
   return tableau;
+}
+
+// Runs simplex on the given table and returns the table itself. Must have an
+// initial basis setup
+tableau_t *
+simplex (tableau_t * tableau) {
+  while (true) {
+    if (check_optimum(tableau) == -1) {
+      break;
+    }
+
+    tableau = simplex_iteration(tableau);
+
+    #ifdef DEBUGMODE
+    print_tableau(tableau);
+    char buf[2];
+    fgets(buf, 2, stdin);
+    #endif
+  }
+
+  return tableau;
+}
+
+// Checks to see if the index row of the table looks like the identity. If so
+// returns what row of the identity. if not returns -1
+int
+is_ident (tableau_t * tableau, int index) {
+  int found_index = -1;
+  for (int i = 1; i < tableau->rows; i++) {
+    DATATYPE val = tableau->values[i][index];
+    if (val == 1) {
+      if (found_index != -1) return -1;
+      else found_index = i - 1;
+    }
+    else if (val == 0) continue;
+    else return -1;
+  }
+}
+
+// Returns the necessary # of artificial vars
+int
+find_basis (tableau_t * tableau) {
+  // tableau->basic should be of the right size, but all -1
+  // Loop over all of the columns and look for something that looks like the
+  // identity.
+
+  int i, num_bas;
+  for (i = 0; i < tableau->cols - 1; i++) {
+
+    // If a col looks like the identity, num_bas++ and add it to the correct
+    // spot in the basic vars array.
+
+    int index = is_ident(tableau, i);
+    if (index != -1) {
+      num_bas++;
+      tableau->basic[index] = i;
+    }
+  }
+
+  // If we end up with num_bas == rows - 1, we've found a basis, return TRUE.
+  if (num_bas == tableau->rows - 1) return 0;
+
+  // Otherwise we haven't found a basis. Return the # of artifical vars that
+  // will now be necessary in order to find a basis for phase-1 of two phase
+  // simplex.
+  else return tableau->rows - 1 - num_bas;
+}
+
+// Checks for a basis. Returns TWOPHASE if two phases must be run and ONEPHASE
+// if only one phase must be run (ie, there's a basis already).
+enum {TWOPHASE, ONEPHASE}
+artificialize (tableau_t * tableau) {
+  int num_artificial = find_basis(tableau);
+
+  // If we need no artifical vars, it's a single phase problem.
+  if (num_artificial == 0) return ONEPHASE;
+  else {
+    // realloc tableau->values to be of the right size. It'll need
+    // num_artifical more cols.
+
+    // Loop over basic vars to find what cols of the identity we need so
+    // we can figure out where the artifical vars need to be added.
+  }
 }
 
 solution_t *
@@ -166,8 +249,8 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
   }
 
   // assume we have a basis for now
-  for (i = 0, x = num_vars - num_constraints; i < num_constraints; i++, x++)
-    tableau->basic[i] = x;
+  for (i = 0; i < num_constraints; i++)
+    tableau->basic[i] = -1;
 
   // setup simplex table
   for (i = 0; i < num_vars; i++) {
@@ -182,28 +265,20 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
   for (i = 0; i < num_constraints; i++)
     tableau->values[i + 1][num_vars] = b[i];
 
+  #ifdef DEBUGMODE
   printf("initial tableau:\n");
   print_tableau(tableau);
+  #endif
 
-  while (true) {
-    if (check_optimum(tableau) == -1) {
-      break;
-    }
-
-    tableau = simplex(tableau);
-
-#ifdef DEBUGMODE
-    print_tableau(tableau);
-    char buf[1034];
-    gets(buf);
-#endif
-  }
+  simplex(tableau);
 
   printf("optimum\n");
 }
 
 int
 main(int argc, const char *argv[]) {
+
+  /*
   float a1[] = {1, 1, 1, 1, 0, 0};
   float a2[] = {1, 3, 0, 0, 1, 0};
   float a3[] = {0, 0, 1, 0, 0, 1};
@@ -211,8 +286,17 @@ main(int argc, const char *argv[]) {
 
   float c[] = {1, 2, 3, 0, 0, 0};
   float b[] = {5, 6, 3};
-
   solve(A, b, c, 6, 3);
+  */
+
+  float a1[] = {1, 1};
+  float a2[] = {2, 1};
+  float * A[] = {a1, a2};
+  float c[] = {1, 1};
+  float b[] = {6, 8};
+
+  solve(A, b, c, 2, 2);
+
   return 0;
 }
 
