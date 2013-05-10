@@ -6,50 +6,61 @@
 
 #define DATATYPE float
 
-#define DEBUGMODE true
+// Verbose mode, will be set with a cmd line flag
+int verbosemode = true;
+#define VP(x, ...) { if (verbosemode) printf(x, __VA_ARGS__); }
 
-#define DP(x, ...) { if (DEBUGMODE) printf(x, __VA_ARGS__); }
-
+// Type of solution
 typedef enum {
   UNBOUNDED,
   BOUNDED,
   INFEASIBLE
 } solution_type_t;
 
+// An optimum solution which contains the point that is optimal
 typedef struct {
   solution_type_t type;
   DATATYPE * x;
 } optimum_solution_t;
 
+// An unbounded solution returns a cone
 typedef struct {
   solution_type_t type;
-  DATATYPE x;
+  DATATYPE * x;
   DATATYPE d;
 } unbounded_solution_t;
 
+// A solution, which is either optimum, unbounded, or infeasible
 typedef union {
   solution_type_t type;
   optimum_solution_t optimum;
   unbounded_solution_t unbounded;
 } solution_t;
 
+// Table representing simplex state
 typedef struct {
   DATATYPE ** values;
   int * basic;
   int rows;
   int cols;
+  int artificial;
 } tableau_t;
 
+// ## check_unbounded
+// Checks to see if a table is currently representing an unbounded solution
 bool
 check_unbounded (tableau_t * tableau) {
   
 }
 
+// ## check_infeasible
+// Checks to see if a table is currently showing that the problem is infeasible
 bool
 check_infeasible (tableau_t * tableau) {
 
 }
 
+// ## check_optimum
 // Returns the index of the most negative cost or -1 if the problem is optimal
 int
 check_optimum (tableau_t * tableau) {
@@ -66,6 +77,8 @@ check_optimum (tableau_t * tableau) {
   else return index;
 }
 
+// ## mrt
+// Runs the minimum ratio test and returns the index of the leaving var
 int
 mrt (tableau_t * tableau, int entering_var) {
   int i;
@@ -73,10 +86,10 @@ mrt (tableau_t * tableau, int entering_var) {
   int index = 1;
   for (i = 1; i < tableau->rows; i++) {
     DATATYPE ratio = tableau->values[i][tableau->cols - 1] / tableau->values[i][entering_var];
-    DP("got ratio %f for row %d\n", ratio, i);
+    VP("got ratio %f for row %d\n", ratio, i);
     if (ratio < 0) continue;
     if (ratio < min) {
-      DP("new idx is %d\n", i);
+      VP("new idx is %d\n", i);
       min = ratio;
       index = i;
     }
@@ -84,6 +97,8 @@ mrt (tableau_t * tableau, int entering_var) {
   return index - 1;
 }
 
+// ## normalize_row
+// Normalizes a row of the table
 void
 normalize_row (tableau_t * tableau, int row, int col) {
   DATATYPE factor = tableau->values[row][col];
@@ -93,6 +108,7 @@ normalize_row (tableau_t * tableau, int row, int col) {
   }
 }
 
+// ## gaussian_col
 // Makes all of the other cols 0
 void
 gaussian_col (tableau_t * tableau, int row, int col) {
@@ -109,6 +125,8 @@ gaussian_col (tableau_t * tableau, int row, int col) {
   }
 }
 
+// ## print_tableau
+// Prints a tableau
 void
 print_tableau (tableau_t * tableau) {
   int i, j;
@@ -122,6 +140,8 @@ print_tableau (tableau_t * tableau) {
   }
 }
 
+// ## update_basic_vars
+// Replaces a basic var with a different basic var
 void
 update_basic_vars(tableau_t * tableau, int leaving, int entering) {
   int i;
@@ -132,13 +152,14 @@ update_basic_vars(tableau_t * tableau, int leaving, int entering) {
   }
 }
 
+// ## simplex_iteration
 // Single simplex iteration. If soln is optimum, will return same table
 tableau_t *
 simplex_iteration (tableau_t * tableau) {
   int entering_var = check_optimum(tableau);
   int leaving_idx = mrt(tableau, entering_var);
 
-  DP("leaving idx: %d var: %d, entering var: %d\n", leaving_idx, tableau->basic[leaving_idx] + 1, entering_var + 1);
+  VP("leaving idx: %d var: %d, entering var: %d\n", leaving_idx, tableau->basic[leaving_idx] + 1, entering_var + 1);
 
   // make the leaving var, entering var element a 1
   normalize_row(tableau, leaving_idx + 1, entering_var);
@@ -151,6 +172,7 @@ simplex_iteration (tableau_t * tableau) {
   return tableau;
 }
 
+// ## simplex
 // Runs simplex on the given table and returns the table itself. Must have an
 // initial basis setup
 tableau_t *
@@ -162,22 +184,23 @@ simplex (tableau_t * tableau) {
 
     tableau = simplex_iteration(tableau);
 
-    #ifdef DEBUGMODE
-    print_tableau(tableau);
-    char buf[2];
-    fgets(buf, 2, stdin);
-    #endif
+    if (verbosemode) {
+      print_tableau(tableau);
+      char buf[2];
+      fgets(buf, 2, stdin);
+    }
   }
 
   return tableau;
 }
 
+// ## is_ident
 // Checks to see if the index row of the table looks like the identity. If so
 // returns what row of the identity. if not returns -1
 int
 is_ident (tableau_t * tableau, int index) {
-  int found_index = -1;
-  for (int i = 1; i < tableau->rows; i++) {
+  int found_index = -1, i;
+  for (i = 1; i < tableau->rows; i++) {
     DATATYPE val = tableau->values[i][index];
     if (val == 1) {
       if (found_index != -1) return -1;
@@ -188,6 +211,7 @@ is_ident (tableau_t * tableau, int index) {
   }
 }
 
+// ## find_basis
 // Returns the necessary # of artificial vars
 int
 find_basis (tableau_t * tableau) {
@@ -217,6 +241,7 @@ find_basis (tableau_t * tableau) {
   else return tableau->rows - 1 - num_bas;
 }
 
+// ## artificialize
 // Checks for a basis. Returns TWOPHASE if two phases must be run and ONEPHASE
 // if only one phase must be run (ie, there's a basis already).
 enum {TWOPHASE, ONEPHASE}
@@ -226,14 +251,47 @@ artificialize (tableau_t * tableau) {
   // If we need no artifical vars, it's a single phase problem.
   if (num_artificial == 0) return ONEPHASE;
   else {
+    tableau->artificial = num_artificial;
     // realloc tableau->values to be of the right size. It'll need
     // num_artifical more cols.
 
+    int i;
+    for (i = 0; i < tableau->rows; i++) {
+      tableau->values[i] = realloc(
+        tableau->values[i], 
+        sizeof(DATATYPE) * (tableau->rows + num_artificial)
+      );
+
+      // Copy right hand side over
+      tableau->values[i][num_artificial + tableau->cols - 1] = tableau->values[i][tableau->cols - 1];
+
+      // initialize the columns corresponding to the artificial vars to 0
+      int j;
+      for (j = tableau->cols; j < num_artificial + tableau->cols - 1; j++) {
+        tableau->values[i][j] = 0;
+      }
+    }
+
+    int curr_artificial;
     // Loop over basic vars to find what cols of the identity we need so
     // we can figure out where the artifical vars need to be added.
+    for (i = 0; i < tableau->cols - 1; i++) { // this is wrong
+      if (tableau->basic[i] == -1) {
+        // Means we need a col of the ident with the 1 in position i
+      }
+    }
   }
 }
 
+// ## deartificialize
+// Undoes the artificialization, reconstructing the objective row
+void
+deartificialize (tableau_t * tableau) {
+
+}
+
+// ## solve
+// Actually solves an LP problem
 solution_t *
 solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constraints) {
   tableau_t * tableau = malloc(sizeof(tableau_t));
@@ -241,6 +299,7 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
   tableau->basic = calloc(num_constraints, sizeof(DATATYPE));
   tableau->rows = num_constraints + 1;
   tableau->cols = num_vars + 1;
+  tableau->artificial = 0;
 
   int i, x;
 
@@ -265,10 +324,10 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
   for (i = 0; i < num_constraints; i++)
     tableau->values[i + 1][num_vars] = b[i];
 
-  #ifdef DEBUGMODE
-  printf("initial tableau:\n");
-  print_tableau(tableau);
-  #endif
+  if (verbosemode) {
+    printf("initial tableau:\n");
+    print_tableau(tableau);
+  }
 
   simplex(tableau);
 
@@ -278,7 +337,6 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
 int
 main(int argc, const char *argv[]) {
 
-  /*
   float a1[] = {1, 1, 1, 1, 0, 0};
   float a2[] = {1, 3, 0, 0, 1, 0};
   float a3[] = {0, 0, 1, 0, 0, 1};
@@ -287,15 +345,16 @@ main(int argc, const char *argv[]) {
   float c[] = {1, 2, 3, 0, 0, 0};
   float b[] = {5, 6, 3};
   solve(A, b, c, 6, 3);
-  */
 
+/*
   float a1[] = {1, 1};
   float a2[] = {2, 1};
   float * A[] = {a1, a2};
   float c[] = {1, 1};
   float b[] = {6, 8};
+*/
 
-  solve(A, b, c, 2, 2);
+  //solve(A, b, c, 2, 2);
 
   return 0;
 }
