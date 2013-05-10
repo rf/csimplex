@@ -129,6 +129,7 @@ gaussian_col (tableau_t * tableau, int row, int col) {
 // Prints a tableau
 void
 print_tableau (tableau_t * tableau) {
+  if (!verbosemode) return;
   int i, j;
   for (i = 0; i < tableau->rows; i++) {
     for (j = -1; j < tableau->cols; j++) {
@@ -247,6 +248,7 @@ find_basis (tableau_t * tableau) {
 enum {TWOPHASE, ONEPHASE}
 artificialize (tableau_t * tableau) {
   int num_artificial = find_basis(tableau);
+  VP("Need %d artificial variables.\n", num_artificial);
 
   // If we need no artifical vars, it's a single phase problem.
   if (num_artificial == 0) return ONEPHASE;
@@ -272,14 +274,18 @@ artificialize (tableau_t * tableau) {
       }
     }
 
-    int curr_artificial;
+    int curr_artificial = tableau->cols;
     // Loop over basic vars to find what cols of the identity we need so
     // we can figure out where the artifical vars need to be added.
     for (i = 0; i < tableau->cols - 1; i++) { // this is wrong
       if (tableau->basic[i] == -1) {
         // Means we need a col of the ident with the 1 in position i
+        tableau->values[i + 1][curr_artificial] = 1;
       }
     }
+
+    // Fix table state
+    tableau->cols += num_artificial;
   }
 }
 
@@ -307,7 +313,6 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
     tableau->values[i] = calloc(num_vars + 1, sizeof(DATATYPE));
   }
 
-  // assume we have a basis for now
   for (i = 0; i < num_constraints; i++)
     tableau->basic[i] = -1;
 
@@ -329,9 +334,15 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
     print_tableau(tableau);
   }
 
-  simplex(tableau);
+  // ### The important part.
+  if (artificialize(tableau) == TWOPHASE) {
+    printf("tableau after artificialized:\n");
+    print_tableau(tableau);
+    simplex(tableau);
+    deartificialize(tableau);
+  }
 
-  printf("optimum\n");
+  simplex(tableau);
 }
 
 int
