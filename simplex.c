@@ -14,6 +14,7 @@
 // Verbose mode, will be set with a cmd line flag
 int verbosemode = false;
 int interactivemode = false;
+int tableprint = false;
 #define VP(x, ...) { if (verbosemode) printf(x, __VA_ARGS__); }
 
 // Type of solution
@@ -138,7 +139,7 @@ gaussian_col (tableau_t * tableau, int row, int col) {
 // Prints a tableau
 void
 print_tableau (tableau_t * tableau) {
-  if (!verbosemode) return;
+  if (!tableprint) return;
   int i, j;
   for (i = 0; i < tableau->rows; i++) {
     for (j = -1; j < tableau->cols; j++) {
@@ -446,19 +447,20 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
 
 void
 help () {
-  printf("Simplex solver\nRuss Frank\n\nOptions:\n\t-v\tverbose mode\n\t-i\tinteractive mode (implies verbose mode)\n");
+  printf("Simplex solver\nRuss Frank\n\nOptions:\n\t-v\tverbose mode\n\t-i\tinteractive mode (implies verbose mode)\n\t-t\tprint tableau at every step (also implies verbosemode)\n");
 }
 
 int
-main(int argc, const char *argv[]) {
+main(int argc, char *argv[]) {
   float ** A, * b, * c;
   char * A_str, * b_str, * c_str;
   int num_vars, num_constraints;
 
   int arg;
-  while ((arg = getopt(argc, argv, "vih")) != -1) switch(arg) {
+  while ((arg = getopt(argc, argv, "tvih")) != -1) switch(arg) {
     case 'v': verbosemode = true; break;
     case 'i': interactivemode = true; verbosemode = true; break;
+    case 't': tableprint = true; verbosemode = true; break;
     case 'h': help(); exit(0); break;
   };
 
