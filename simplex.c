@@ -141,9 +141,10 @@ print_tableau (tableau_t * tableau) {
   int i, j;
   for (i = 0; i < tableau->rows; i++) {
     for (j = -1; j < tableau->cols; j++) {
+      if (i == 0 && j == -1) printf("\t");
       if (j == -1 && i > 0) printf("x%d\t", tableau->basic[i-1] + 1);
-      else printf("\t");
-      if (j != -1) printf("%g ", tableau->values[i][j]);
+      else printf("");
+      if (j != -1) printf("%3g\t", tableau->values[i][j]);
     }
     printf("\n");
   }
@@ -353,6 +354,25 @@ deartificialize (tableau_t * tableau) {
   tableau->values[0][tableau->cols - 1] = product;
 }
 
+bool
+verify_solution (tableau_t * tableau, DATATYPE ** A, DATATYPE * b, int num_vars, int num_constraints) {
+  int i;
+  DATATYPE * x = calloc(num_vars, sizeof(DATATYPE));
+  for (i = 0; i < tableau->rows - 1; i++) {
+    x[tableau->basic[i]] = tableau->values[i + 1][tableau->cols - 1];
+  }
+
+  DATATYPE accum;
+  int j;
+  for (i = 0; i < num_constraints; i++) {
+    accum = 0;
+    for (j = 0; j < num_vars; j++) {
+      accum += A[i][j] * x[j];
+    }
+    if (accum != b[i]) printf("Solution FAILS constraint %d! got %g, expected %g!\n", i, accum, b[i]);
+  }
+}
+
 // ## solve
 // Actually solves an LP problem
 solution_t *
@@ -410,6 +430,7 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
       printf("x%d\t%g\n", tableau->basic[i] + 1, tableau->values[i + 1][tableau->cols - 1]);
     }
     printf("OBJECTIVE: %g\n", tableau->values[0][tableau->cols - 1]);
+    verify_solution(tableau, A, b, num_vars, num_constraints);
   } else if (check_infeasible(tableau, ent)) {
     printf("INFEASIBLE!");
   }
