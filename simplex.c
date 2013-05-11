@@ -77,7 +77,7 @@ check_optimum (tableau_t * tableau) {
   DATATYPE min = tableau->values[0][0];
   int index = 0;
   int i;
-  for (i = 0; i < tableau->cols; i++) {
+  for (i = 0; i < tableau->cols - 1; i++) {
     if (tableau->values[0][i] < min) {
       min = tableau->values[0][i];
       index = i;
