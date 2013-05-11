@@ -1,3 +1,5 @@
+// Simplex solver in C. Uses 2 phase simplex. Start reading at [solve](#section-39).
+
 #include <stdio.h>
 #include <math.h>
 #include <stdbool.h>
@@ -44,6 +46,7 @@ typedef struct {
   int rows;
   int cols;
   int artificial;
+  DATATYPE * c;
 } tableau_t;
 
 // ## check_unbounded
@@ -210,6 +213,7 @@ is_ident (tableau_t * tableau, int index) {
     else if (val == 0) continue;
     else return -1;
   }
+  return found_index;
 }
 
 // ## find_basis
@@ -220,18 +224,21 @@ find_basis (tableau_t * tableau) {
   // Loop over all of the columns and look for something that looks like the
   // identity.
 
-  int i, num_bas;
+  int i, num_bas = 0;
   for (i = 0; i < tableau->cols - 1; i++) {
 
     // If a col looks like the identity, num_bas++ and add it to the correct
     // spot in the basic vars array.
 
     int index = is_ident(tableau, i);
+    // VP("Column %d is_ident: %d\n", i, index);
     if (index != -1) {
       num_bas++;
       tableau->basic[index] = i;
     }
   }
+
+  // VP("num vars found for basis: %d\n", num_bas);
 
   // If we end up with num_bas == rows - 1, we've found a basis, return TRUE.
   if (num_bas == tableau->rows - 1) return 0;
@@ -269,23 +276,43 @@ artificialize (tableau_t * tableau) {
 
       // initialize the columns corresponding to the artificial vars to 0
       int j;
-      for (j = tableau->cols; j < num_artificial + tableau->cols - 1; j++) {
+      for (j = tableau->cols - 1; j < num_artificial + tableau->cols - 1; j++) {
         tableau->values[i][j] = 0;
       }
     }
 
-    int curr_artificial = tableau->cols;
+    // Reset objective row.
+    for (i = 0; i < tableau->cols; i++) tableau->values[0][i] = 0;
+
+    int curr_artificial = tableau->cols - 1;
     // Loop over basic vars to find what cols of the identity we need so
     // we can figure out where the artifical vars need to be added.
     for (i = 0; i < tableau->cols - 1; i++) { // this is wrong
       if (tableau->basic[i] == -1) {
+        tableau->basic[i] = curr_artificial;
         // Means we need a col of the ident with the 1 in position i
         tableau->values[i + 1][curr_artificial] = 1;
+        curr_artificial += 1;
+
+        // Add the contents of this row to the objective row since it 
+        // corresponds to a row of the matrix that corresponds to an artificial
+        // variable.
+        int j;
+        for (j = 0; j < tableau->cols + num_artificial; j++) 
+          tableau->values[0][j] += tableau->values[i + 1][j];
       }
     }
 
+    for (i = 0; i < tableau->cols + num_artificial; i++) 
+      tableau->values[0][i] = -tableau->values[0][i];
+
+    for (i = tableau->cols - 1; i < tableau->cols + num_artificial - 1; i++)
+      tableau->values[0][i] = 0;
+
     // Fix table state
     tableau->cols += num_artificial;
+
+    return TWOPHASE;
   }
 }
 
@@ -293,7 +320,27 @@ artificialize (tableau_t * tableau) {
 // Undoes the artificialization, reconstructing the objective row
 void
 deartificialize (tableau_t * tableau) {
+  tableau->cols -= tableau->artificial;
+  int i, j;
+  DATATYPE product;
 
+  // Move RHS over
+  for (i = 0; i < tableau->rows; i++)
+    tableau->values[i][tableau->cols - 1] = tableau->values[i][tableau->cols + tableau->artificial - 1];
+
+  // Reconstruct objective row
+  for (i = 0; i < tableau->cols - 1; i++) {
+    product = 0;
+    for (j = 1; j < tableau->rows - 1; j++)
+      product += (tableau->c[tableau->basic[j]] * tableau->values[j][i + 1]);
+    product -= tableau->c[i];
+    tableau->values[0][i] = product;
+  }
+
+  product = 0;
+  for (j = 0; j < tableau->rows - 1; j++)
+    product += (tableau->c[tableau->basic[j]] * tableau->values[j][tableau->cols]);
+  tableau->values[0][tableau->cols] = product;
 }
 
 // ## solve
@@ -306,6 +353,7 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
   tableau->rows = num_constraints + 1;
   tableau->cols = num_vars + 1;
   tableau->artificial = 0;
+  tableau->c = c;
 
   int i, x;
 
@@ -329,17 +377,19 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
   for (i = 0; i < num_constraints; i++)
     tableau->values[i + 1][num_vars] = b[i];
 
-  if (verbosemode) {
-    printf("initial tableau:\n");
-    print_tableau(tableau);
-  }
+  VP("initial tableau:\n", "");
+  print_tableau(tableau);
 
   // ### The important part.
   if (artificialize(tableau) == TWOPHASE) {
-    printf("tableau after artificialized:\n");
+    VP("tableau after artificialized:\n", "");
     print_tableau(tableau);
     simplex(tableau);
+    VP("tableau after phase 1:\n", "");
+    print_tableau(tableau);
     deartificialize(tableau);
+    VP("tableau after deartificialization:\n", "");
+    print_tableau(tableau);
   }
 
   simplex(tableau);
@@ -348,6 +398,7 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
 int
 main(int argc, const char *argv[]) {
 
+/*
   float a1[] = {1, 1, 1, 1, 0, 0};
   float a2[] = {1, 3, 0, 0, 1, 0};
   float a3[] = {0, 0, 1, 0, 0, 1};
@@ -356,17 +407,26 @@ main(int argc, const char *argv[]) {
   float c[] = {1, 2, 3, 0, 0, 0};
   float b[] = {5, 6, 3};
   solve(A, b, c, 6, 3);
-
+*/
 /*
   float a1[] = {1, 1};
   float a2[] = {2, 1};
   float * A[] = {a1, a2};
   float c[] = {1, 1};
   float b[] = {6, 8};
+
+  solve(A, b, c, 2, 2);
 */
 
-  //solve(A, b, c, 2, 2);
+  float a1[] = {1, 1, -1, 0, 0};
+  float a2[] = {-1, 1, 0, -1, 0};
+  float a3[] = {0, 1, 0, 0, 1};
+  float c[] = {-1, 2, 0, 0, 0};
+  float b[] = {2, 1, 3};
 
+  float * A[] = {a1, a2, a3};
+
+  solve(A, b, c, 5, 3);
   return 0;
 }
 
