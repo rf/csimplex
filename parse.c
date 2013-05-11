@@ -32,14 +32,15 @@ void
 parse_matrix (int * rows, int * cols, DATATYPE *** output, char * input) {
   char ** lines;
   int i, count = split(&lines, input, "\n");
-  *output = malloc(count * sizeof(DATATYPE *));
+  DATATYPE ** out = malloc(count * sizeof(DATATYPE *));
   *cols = -1;
 
   for (i = 0; i < count; i++) {
-    int num = parse_rows(&(*output)[i], lines[i], " ");
+    int num = parse_rows(&(out[i]), lines[i], " ");
     if (*cols == -1) *cols = num;
   }
 
+  *output = out;
   *rows = count;
 }
 

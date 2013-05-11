@@ -137,7 +137,7 @@ gaussian_col (tableau_t * tableau, int row, int col) {
 // Prints a tableau
 void
 print_tableau (tableau_t * tableau) {
-return;
+  return;
   if (!verbosemode) return;
   int i, j;
   for (i = 0; i < tableau->rows; i++) {
@@ -280,7 +280,7 @@ artificialize (tableau_t * tableau) {
     for (i = 0; i < tableau->rows; i++) {
       tableau->values[i] = realloc(
         tableau->values[i], 
-        sizeof(DATATYPE) * (tableau->rows + num_artificial)
+        sizeof(DATATYPE) * (tableau->cols + num_artificial)
       );
 
       // Copy right hand side over
@@ -411,6 +411,7 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
     for (i = 0; i < tableau->rows - 1; i++) { 
       printf("x%d: %f\n", tableau->basic[i], tableau->values[i + 1][tableau->cols - 1]);
     }
+    printf("OBJECTIVE: %f\n", tableau->values[0][tableau->cols - 1]);
   } else if (check_infeasible(tableau, ent)) {
     printf("INFEASIBLE!");
   }
@@ -447,6 +448,7 @@ main(int argc, const char *argv[]) {
   get_file("b.txt", &b_str);
   get_file("c.txt", &c_str);
   parse_matrix(&num_constraints, &num_vars, &A, A_str);
+
   parse_rows(&b, b_str, "\n");
   parse_rows(&c, c_str, "\n");
 
