@@ -371,6 +371,13 @@ verify_solution (tableau_t * tableau, DATATYPE ** A, DATATYPE * b, int num_vars,
     }
     if (accum != b[i]) printf("Solution FAILS constraint %d! got %g, expected %g!\n", i, accum, b[i]);
   }
+
+  accum = 0;
+  for (i = 0; i < num_vars; i++) {
+    accum += tableau->c[i] * x[i];
+  }
+  if (accum != tableau->values[0][tableau->cols - 1]) 
+    printf("INCORRECT objective value in table. got %g, expected %g", tableau->values[0][tableau->cols - 1], accum);
 }
 
 // ## solve
