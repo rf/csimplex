@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <curses.h>
 #include <getopt.h>
+#include <time.h>
 
 #define DATATYPE float
 
@@ -80,7 +81,15 @@ check_optimum (tableau_t * tableau) {
   int index = 0;
   int i;
   for (i = 0; i < tableau->cols - 1; i++) {
-    if (tableau->values[0][i] <= min) {
+    /*if (tableau->values[0][i] == min) {
+      // randomly decide to use it
+      if (rand() % 2 == 0) {
+        min = tableau->values[0][i];
+        index = i;
+      }
+    }
+
+    else */if (tableau->values[0][i] <= min) {
       min = tableau->values[0][i];
       index = i;
     }
@@ -99,7 +108,14 @@ mrt (tableau_t * tableau, int entering_var) {
   for (i = 1; i < tableau->rows; i++) {
     DATATYPE ratio = tableau->values[i][tableau->cols - 1] / tableau->values[i][entering_var];
     if (ratio < 0) continue;
-    if (ratio < min) {
+    /*
+    if (ratio == min) {
+      if (rand() % 2 == 0) {
+        min = ratio;
+        index = i;
+      }
+    }
+    else */if (ratio < min) {
       min = ratio;
       index = i;
     }
@@ -460,6 +476,8 @@ main(int argc, char *argv[]) {
   float ** A, * b, * c;
   char * A_str, * b_str, * c_str;
   int num_vars, num_constraints;
+
+  srand(time(NULL));
 
   int arg;
   while ((arg = getopt(argc, argv, "tvih")) != -1) switch(arg) {
