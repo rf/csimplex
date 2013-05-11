@@ -243,7 +243,6 @@ find_basis (tableau_t * tableau) {
     // spot in the basic vars array.
 
     int index = is_ident(tableau, i);
-    // VP("Column %d is_ident: %d\n", i, index);
     if (index != -1) {
       num_bas++;
       tableau->basic[index] = i;
@@ -409,7 +408,7 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
   int ent;
   if ((ent = check_optimum(tableau)) == -1) {
     for (i = 0; i < tableau->rows - 1; i++) { 
-      printf("x%d: %f\n", tableau->basic[i], tableau->values[i + 1][tableau->cols - 1]);
+      printf("x%d: %f\n", tableau->basic[i] + 1, tableau->values[i + 1][tableau->cols - 1]);
     }
     printf("OBJECTIVE: %f\n", tableau->values[0][tableau->cols - 1]);
   } else if (check_infeasible(tableau, ent)) {
@@ -436,9 +435,20 @@ main(int argc, const char *argv[]) {
   float * A[] = {a1, a2};
   float c[] = {1, 1};
   float b[] = {6, 8};
-
   solve(A, b, c, 2, 2);
 */
+
+/*
+  float a1[] = {1, 1, -1, 0, 0};
+  float a2[] = {0, 1, 0, -1, 0};
+  float a3[] = {1, 0, 0, 0, 1};
+  float * A[] = {a1, a2, a3};
+  float c[] = {1, -1, 0, 0, 0};
+  float b[] = {3, 2, 4};
+
+  solve(A, b, c, 5, 3);
+  */
+
 
   float ** A, * b, * c;
   char * A_str, * b_str, * c_str;
@@ -452,7 +462,10 @@ main(int argc, const char *argv[]) {
   parse_rows(&b, b_str, "\n");
   parse_rows(&c, c_str, "\n");
 
+  printf("vars: %d, constraints: %d\n", num_vars, num_constraints);
+
   solve(A, b, c, num_vars, num_constraints);
+
   return 0;
 }
 

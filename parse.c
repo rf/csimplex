@@ -37,11 +37,11 @@ parse_matrix (int * rows, int * cols, DATATYPE *** output, char * input) {
 
   for (i = 0; i < count; i++) {
     int num = parse_rows(&(out[i]), lines[i], " ");
-    if (*cols == -1) *cols = num;
+    if (*cols == -1) *cols = num - 1;
   }
 
   *output = out;
-  *rows = count;
+  *rows = count - 1;
 }
 
 int
