@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <curses.h>
+#include <getopt.h>
 
 #define DATATYPE float
 
@@ -443,11 +444,23 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
   }
 }
 
+void
+help () {
+  printf("Simplex solver\nRuss Frank\n\nOptions:\n\t-v\tverbose mode\n\t-i\tinteractive mode (implies verbose mode)\n");
+}
+
 int
 main(int argc, const char *argv[]) {
   float ** A, * b, * c;
   char * A_str, * b_str, * c_str;
   int num_vars, num_constraints;
+
+  int arg;
+  while ((arg = getopt(argc, argv, "vih")) != -1) switch(arg) {
+    case 'v': verbosemode = true; break;
+    case 'i': interactivemode = true; verbosemode = true; break;
+    case 'h': help(); exit(0); break;
+  };
 
   get_file("A.txt", &A_str);
   get_file("b.txt", &b_str);
@@ -457,7 +470,6 @@ main(int argc, const char *argv[]) {
   parse_rows(&b, b_str, "\n");
   parse_rows(&c, c_str, "\n");
 
-  printf("vars: %d, constraints: %d\n", num_vars, num_constraints);
   solve(A, b, c, num_vars, num_constraints);
 
   return 0;
