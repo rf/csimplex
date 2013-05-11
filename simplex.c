@@ -12,6 +12,7 @@
 
 // Verbose mode, will be set with a cmd line flag
 int verbosemode = true;
+int interactivemode = false;
 #define VP(x, ...) { if (verbosemode) printf(x, __VA_ARGS__); }
 
 // Type of solution
@@ -173,6 +174,7 @@ simplex_iteration (tableau_t * tableau) {
     printf("Current basis: ");
     int i;
     for (i = 0; i < tableau->rows - 1; i++) printf(" x%d", tableau->basic[i] + 1);
+    printf("\n");
   }
 
   // make the leaving var, entering var element a 1
@@ -201,7 +203,7 @@ simplex (tableau_t * tableau) {
     if (verbosemode) {
       print_tableau(tableau);
       char buf[2];
-      fgets(buf, 2, stdin);
+      if (interactivemode) fgets(buf, 2, stdin);
     }
   }
 
