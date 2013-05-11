@@ -61,8 +61,12 @@ check_unbounded (tableau_t * tableau) {
 // ## check_infeasible
 // Checks to see if a table is currently showing that the problem is infeasible
 bool
-check_infeasible (tableau_t * tableau) {
-
+check_infeasible (tableau_t * tableau, int entering_var) {
+  int i;
+  for (i = 1; i < tableau->rows - 1; i++) {
+    if (tableau->values[i][entering_var] >= 0) return false;
+  }
+  return true;
 }
 
 // ## check_optimum
@@ -91,7 +95,6 @@ mrt (tableau_t * tableau, int entering_var) {
   int index = 1;
   for (i = 1; i < tableau->rows; i++) {
     DATATYPE ratio = tableau->values[i][tableau->cols - 1] / tableau->values[i][entering_var];
-    VP("got ratio %f for row %d\n", ratio, i);
     if (ratio < 0) continue;
     if (ratio < min) {
       min = ratio;
@@ -133,6 +136,7 @@ gaussian_col (tableau_t * tableau, int row, int col) {
 // Prints a tableau
 void
 print_tableau (tableau_t * tableau) {
+return;
   if (!verbosemode) return;
   int i, j;
   for (i = 0; i < tableau->rows; i++) {
@@ -165,6 +169,11 @@ simplex_iteration (tableau_t * tableau) {
   int leaving_idx = mrt(tableau, entering_var);
 
   VP("leaving idx: %d var: %d, entering var: %d\n", leaving_idx, tableau->basic[leaving_idx] + 1, entering_var + 1);
+  if (verbosemode) {
+    printf("Current basis: ");
+    int i;
+    for (i = 0; i < tableau->rows - 1; i++) printf(" x%d", tableau->basic[i] + 1);
+  }
 
   // make the leaving var, entering var element a 1
   normalize_row(tableau, leaving_idx + 1, entering_var);
@@ -183,9 +192,9 @@ simplex_iteration (tableau_t * tableau) {
 tableau_t *
 simplex (tableau_t * tableau) {
   while (true) {
-    if (check_optimum(tableau) == -1) {
-      break;
-    }
+    int entering_var;
+    if ((entering_var = check_optimum(tableau)) == -1) break;
+    if (check_infeasible(tableau, entering_var)) break;
 
     tableau = simplex_iteration(tableau);
 
@@ -394,6 +403,15 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
   }
 
   simplex(tableau);
+
+  int ent;
+  if ((ent = check_optimum(tableau)) == -1) {
+    for (i = 0; i < tableau->rows - 1; i++) { 
+      printf("x%d: %f\n", tableau->basic[i], tableau->values[i + 1][tableau->cols - 1]);
+    }
+  } else if (check_infeasible(tableau, ent)) {
+    printf("INFEASIBLE!");
+  }
 }
 
 int
