@@ -80,7 +80,7 @@ check_optimum (tableau_t * tableau) {
   int index = 0;
   int i;
   for (i = 0; i < tableau->cols - 1; i++) {
-    if (tableau->values[0][i] < min) {
+    if (tableau->values[0][i] <= min) {
       min = tableau->values[0][i];
       index = i;
     }
@@ -413,8 +413,13 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
     for (j = 0; j < num_vars; j++)
       tableau->values[i + 1][j] = A[i][j];
 
-  for (i = 0; i < num_constraints; i++)
+  for (i = 0; i < num_constraints; i++) {
     tableau->values[i + 1][num_vars] = b[i];
+    if (b[i] < 0) {
+      for (j = 0; j < num_vars + 1; j++)
+        tableau->values[i + 1][j] = -tableau->values[i + 1][j];
+    }
+  }
 
   VP("initial tableau:\n", "");
   print_tableau(tableau);
