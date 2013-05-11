@@ -8,6 +8,8 @@
 
 #define DATATYPE float
 
+#include "parse.h"
+
 // Verbose mode, will be set with a cmd line flag
 int verbosemode = true;
 #define VP(x, ...) { if (verbosemode) printf(x, __VA_ARGS__); }
@@ -417,15 +419,18 @@ main(int argc, const char *argv[]) {
   solve(A, b, c, 2, 2);
 */
 
-  float a1[] = {1, 1, -1, 0, 0};
-  float a2[] = {-1, 1, 0, -1, 0};
-  float a3[] = {0, 1, 0, 0, 1};
-  float c[] = {-1, 2, 0, 0, 0};
-  float b[] = {2, 1, 3};
+  float ** A, * b, * c;
+  char * A_str, * b_str, * c_str;
+  int num_vars, num_constraints;
 
-  float * A[] = {a1, a2, a3};
+  get_file("A.txt", &A_str);
+  get_file("b.txt", &b_str);
+  get_file("c.txt", &c_str);
+  parse_matrix(&num_constraints, &num_vars, &A, A_str);
+  parse_rows(&b, b_str, "\n");
+  parse_rows(&c, c_str, "\n");
 
-  solve(A, b, c, 5, 3);
+  solve(A, b, c, num_vars, num_constraints);
   return 0;
 }
 
