@@ -445,38 +445,6 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
 
 int
 main(int argc, const char *argv[]) {
-
-/*
-  float a1[] = {1, 1, 1, 1, 0, 0};
-  float a2[] = {1, 3, 0, 0, 1, 0};
-  float a3[] = {0, 0, 1, 0, 0, 1};
-  float * A[] = {a1, a2, a3};
-
-  float c[] = {1, 2, 3, 0, 0, 0};
-  float b[] = {5, 6, 3};
-  solve(A, b, c, 6, 3);
-*/
-/*
-  float a1[] = {1, 1};
-  float a2[] = {2, 1};
-  float * A[] = {a1, a2};
-  float c[] = {1, 1};
-  float b[] = {6, 8};
-  solve(A, b, c, 2, 2);
-*/
-
-/*
-  float a1[] = {1, 1, -1, 0, 0};
-  float a2[] = {0, 1, 0, -1, 0};
-  float a3[] = {1, 0, 0, 0, 1};
-  float * A[] = {a1, a2, a3};
-  float c[] = {1, -1, 0, 0, 0};
-  float b[] = {3, 2, 4};
-
-  solve(A, b, c, 5, 3);
-  */
-
-
   float ** A, * b, * c;
   char * A_str, * b_str, * c_str;
   int num_vars, num_constraints;
