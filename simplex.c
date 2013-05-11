@@ -85,14 +85,13 @@ check_optimum (tableau_t * tableau) {
 int
 mrt (tableau_t * tableau, int entering_var) {
   int i;
-  DATATYPE min = tableau->values[1][tableau->cols - 1] / tableau->values[1][entering_var];
+  DATATYPE min = INFINITY;
   int index = 1;
   for (i = 1; i < tableau->rows; i++) {
     DATATYPE ratio = tableau->values[i][tableau->cols - 1] / tableau->values[i][entering_var];
     VP("got ratio %f for row %d\n", ratio, i);
     if (ratio < 0) continue;
     if (ratio < min) {
-      VP("new idx is %d\n", i);
       min = ratio;
       index = i;
     }
@@ -332,15 +331,15 @@ deartificialize (tableau_t * tableau) {
   for (i = 0; i < tableau->cols - 1; i++) {
     product = 0;
     for (j = 1; j < tableau->rows - 1; j++)
-      product += (tableau->c[tableau->basic[j]] * tableau->values[j][i + 1]);
+      product += (tableau->c[tableau->basic[j - 1]] * tableau->values[j][i]);
     product -= tableau->c[i];
     tableau->values[0][i] = product;
   }
 
   product = 0;
-  for (j = 0; j < tableau->rows - 1; j++)
-    product += (tableau->c[tableau->basic[j]] * tableau->values[j][tableau->cols]);
-  tableau->values[0][tableau->cols] = product;
+  for (j = 1; j < tableau->rows - 1; j++)
+    product += (tableau->c[tableau->basic[j - 1]] * tableau->values[j][tableau->cols - 1]);
+  tableau->values[0][tableau->cols - 1] = product;
 }
 
 // ## solve
