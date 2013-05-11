@@ -11,7 +11,7 @@
 #include "parse.h"
 
 // Verbose mode, will be set with a cmd line flag
-int verbosemode = true;
+int verbosemode = false;
 int interactivemode = false;
 #define VP(x, ...) { if (verbosemode) printf(x, __VA_ARGS__); }
 
