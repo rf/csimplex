@@ -77,7 +77,7 @@ check_optimum (tableau_t * tableau) {
   DATATYPE min = tableau->values[0][0];
   int index = 0;
   int i;
-  for (i = 0; i < tableau->rows; i++) {
+  for (i = 0; i < tableau->cols; i++) {
     if (tableau->values[0][i] < min) {
       min = tableau->values[0][i];
       index = i;
@@ -137,14 +137,13 @@ gaussian_col (tableau_t * tableau, int row, int col) {
 // Prints a tableau
 void
 print_tableau (tableau_t * tableau) {
-  return;
   if (!verbosemode) return;
   int i, j;
   for (i = 0; i < tableau->rows; i++) {
     for (j = -1; j < tableau->cols; j++) {
       if (j == -1 && i > 0) printf("x%d\t", tableau->basic[i-1] + 1);
       else printf("\t");
-      if (j != -1) printf("%f ", tableau->values[i][j]);
+      if (j != -1) printf("%g ", tableau->values[i][j]);
     }
     printf("\n");
   }
@@ -408,9 +407,9 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
   int ent;
   if ((ent = check_optimum(tableau)) == -1) {
     for (i = 0; i < tableau->rows - 1; i++) { 
-      printf("x%d: %f\n", tableau->basic[i] + 1, tableau->values[i + 1][tableau->cols - 1]);
+      printf("x%d\t%g\n", tableau->basic[i] + 1, tableau->values[i + 1][tableau->cols - 1]);
     }
-    printf("OBJECTIVE: %f\n", tableau->values[0][tableau->cols - 1]);
+    printf("OBJECTIVE: %g\n", tableau->values[0][tableau->cols - 1]);
   } else if (check_infeasible(tableau, ent)) {
     printf("INFEASIBLE!");
   }
@@ -463,7 +462,6 @@ main(int argc, const char *argv[]) {
   parse_rows(&c, c_str, "\n");
 
   printf("vars: %d, constraints: %d\n", num_vars, num_constraints);
-
   solve(A, b, c, num_vars, num_constraints);
 
   return 0;
