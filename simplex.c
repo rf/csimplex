@@ -99,7 +99,7 @@ mrt (tableau_t * tableau, int entering_var) {
   int i;
   DATATYPE min = INFINITY;
   int index = 0;
-  for (i = 1; i < tableau->rows - 1; i++) {
+  for (i = 1; i < tableau->rows; i++) {
     DATATYPE ratio = tableau->values[i][tableau->cols - 1] / tableau->values[i][entering_var];
     if (ratio < 0 || tableau->values[i][entering_var] <= 0) continue;
 
@@ -365,7 +365,9 @@ bool
 verify_solution (tableau_t * tableau, DATATYPE ** A, DATATYPE * b, int num_vars, int num_constraints) {
   int i;
   DATATYPE * x = calloc(num_vars, sizeof(DATATYPE));
+  //printf("num vars %d\n", num_vars);
   for (i = 0; i < num_constraints; i++) {
+    //printf("writing %d\n", tableau->basic[i]);
     x[tableau->basic[i]] = tableau->values[i + 1][tableau->cols - 1];
   }
 
