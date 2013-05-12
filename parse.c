@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <strings.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define DATATYPE float
 

@@ -7,8 +7,10 @@
 #include <curses.h>
 #include <getopt.h>
 #include <time.h>
+#include <float.h>
 
 #define DATATYPE float
+#define INFINITY FLT_MAX
 
 #include "parse.h"
 
