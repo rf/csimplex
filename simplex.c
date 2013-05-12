@@ -104,7 +104,7 @@ mrt (tableau_t * tableau, int entering_var) {
     if (ratio < 0 || tableau->values[i][entering_var] <= 0) continue;
 
     if (ratio < min) {
-      printf("found smaller ratio: %g less than %g for index %d (%g/%g)\n", ratio, min, i, tableau->values[i][tableau->cols - 1], tableau->values[i][entering_var]);
+      //printf("found smaller ratio: %g less than %g for index %d (%g/%g)\n", ratio, min, i, tableau->values[i][tableau->cols - 1], tableau->values[i][entering_var]);
       min = ratio;
       index = i;
     }
@@ -305,7 +305,7 @@ artificialize (tableau_t * tableau) {
     int curr_artificial = tableau->cols - 1;
     // Loop over basic vars to find what cols of the identity we need so
     // we can figure out where the artifical vars need to be added.
-    for (i = 0; i < tableau->cols - 1; i++) { // this is wrong
+    for (i = 0; i < tableau->rows - 1; i++) { // this is wrong
       if (tableau->basic[i] == -1) {
         tableau->basic[i] = curr_artificial;
         // Means we need a col of the ident with the 1 in position i
@@ -365,7 +365,7 @@ bool
 verify_solution (tableau_t * tableau, DATATYPE ** A, DATATYPE * b, int num_vars, int num_constraints) {
   int i;
   DATATYPE * x = calloc(num_vars, sizeof(DATATYPE));
-  for (i = 0; i < tableau->rows - 1; i++) {
+  for (i = 0; i < num_constraints; i++) {
     x[tableau->basic[i]] = tableau->values[i + 1][tableau->cols - 1];
   }
 
