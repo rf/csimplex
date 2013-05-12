@@ -77,19 +77,11 @@ check_infeasible (tableau_t * tableau, int entering_var) {
 // Returns the index of the most negative cost or -1 if the problem is optimal
 int
 check_optimum (tableau_t * tableau) {
-  DATATYPE min = tableau->values[0][0];
+  DATATYPE min = INFINITY;
   int index = 0;
   int i;
   for (i = 0; i < tableau->cols - 1; i++) {
-    /*if (tableau->values[0][i] == min) {
-      // randomly decide to use it
-      if (rand() % 2 == 0) {
-        min = tableau->values[0][i];
-        index = i;
-      }
-    }
-
-    else */if (tableau->values[0][i] <= min) {
+    if (tableau->values[0][i] < min) {
       min = tableau->values[0][i];
       index = i;
     }
@@ -104,18 +96,13 @@ int
 mrt (tableau_t * tableau, int entering_var) {
   int i;
   DATATYPE min = INFINITY;
-  int index = 1;
-  for (i = 1; i < tableau->rows; i++) {
+  int index = 0;
+  for (i = 1; i < tableau->rows - 1; i++) {
     DATATYPE ratio = tableau->values[i][tableau->cols - 1] / tableau->values[i][entering_var];
-    if (ratio < 0) continue;
-    /*
-    if (ratio == min) {
-      if (rand() % 2 == 0) {
-        min = ratio;
-        index = i;
-      }
-    }
-    else */if (ratio < min) {
+    if (ratio < 0 || tableau->values[i][entering_var] <= 0) continue;
+
+    if (ratio < min) {
+      printf("found smaller ratio: %g less than %g for index %d (%g/%g)\n", ratio, min, i, tableau->values[i][tableau->cols - 1], tableau->values[i][entering_var]);
       min = ratio;
       index = i;
     }
@@ -187,7 +174,7 @@ simplex_iteration (tableau_t * tableau) {
   int entering_var = check_optimum(tableau);
   int leaving_idx = mrt(tableau, entering_var);
 
-  VP("leaving idx: %d var: %d, entering var: %d\n", leaving_idx, tableau->basic[leaving_idx] + 1, entering_var + 1);
+  VP("leaving idx: %d var: %d, entering var: %d, curr obj: %g\n", leaving_idx, tableau->basic[leaving_idx] + 1, entering_var + 1, tableau->values[0][tableau->cols - 1]);
   if (verbosemode) {
     printf("Current basis: ");
     int i;
