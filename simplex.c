@@ -18,34 +18,8 @@
 int verbosemode = false;
 int interactivemode = false;
 int tableprint = false;
+int humanoutput = false;
 #define VP(x, ...) { if (verbosemode) printf(x, __VA_ARGS__); }
-
-// Type of solution
-typedef enum {
-  UNBOUNDED,
-  BOUNDED,
-  INFEASIBLE
-} solution_type_t;
-
-// An optimum solution which contains the point that is optimal
-typedef struct {
-  solution_type_t type;
-  DATATYPE * x;
-} optimum_solution_t;
-
-// An unbounded solution returns a cone
-typedef struct {
-  solution_type_t type;
-  DATATYPE * x;
-  DATATYPE d;
-} unbounded_solution_t;
-
-// A solution, which is either optimum, unbounded, or infeasible
-typedef union {
-  solution_type_t type;
-  optimum_solution_t optimum;
-  unbounded_solution_t unbounded;
-} solution_t;
 
 // Table representing simplex state
 typedef struct {
@@ -57,17 +31,15 @@ typedef struct {
   DATATYPE * c;
 } tableau_t;
 
-// ## check_unbounded
-// Checks to see if a table is currently representing an unbounded solution
+// ## check_infeasible
 bool
-check_unbounded (tableau_t * tableau) {
+check_infeasible (tableau_t * tableau) {
   
 }
 
-// ## check_infeasible
-// Checks to see if a table is currently showing that the problem is infeasible
+// ## check_unbounded
 bool
-check_infeasible (tableau_t * tableau, int entering_var) {
+check_unbounded (tableau_t * tableau, int entering_var) {
   int i;
   for (i = 1; i < tableau->rows - 1; i++) {
     if (tableau->values[i][entering_var] >= 0) return false;
@@ -203,7 +175,7 @@ simplex (tableau_t * tableau) {
   while (true) {
     int entering_var;
     if ((entering_var = check_optimum(tableau)) == -1) break;
-    if (check_infeasible(tableau, entering_var)) break;
+    if (check_unbounded(tableau, entering_var)) break;
 
     tableau = simplex_iteration(tableau);
 
@@ -387,11 +359,13 @@ verify_solution (tableau_t * tableau, DATATYPE ** A, DATATYPE * b, int num_vars,
   }
   if (accum != tableau->values[0][tableau->cols - 1]) 
     printf("INCORRECT objective value in table. got %g, expected %g", tableau->values[0][tableau->cols - 1], accum);
+
+  if (!humanoutput) for (i = 0; i < num_vars; i++) printf("%g\n", x[i]);
 }
 
 // ## solve
 // Actually solves an LP problem
-solution_t *
+void
 solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constraints) {
   tableau_t * tableau = malloc(sizeof(tableau_t));
   tableau->values = calloc(num_constraints + 1, sizeof(DATATYPE *));
@@ -447,19 +421,21 @@ solve (DATATYPE ** A, DATATYPE * b, DATATYPE * c, int num_vars, int num_constrai
 
   int ent;
   if ((ent = check_optimum(tableau)) == -1) {
-    for (i = 0; i < tableau->rows - 1; i++) { 
-      printf("x%d\t%g\n", tableau->basic[i] + 1, tableau->values[i + 1][tableau->cols - 1]);
+    if (humanoutput) {
+      for (i = 0; i < tableau->rows - 1; i++) { 
+        printf("x%d\t%g\n", tableau->basic[i] + 1, tableau->values[i + 1][tableau->cols - 1]);
+      }
+      printf("OBJECTIVE: %g\n", tableau->values[0][tableau->cols - 1]);
     }
-    printf("OBJECTIVE: %g\n", tableau->values[0][tableau->cols - 1]);
     verify_solution(tableau, A, b, num_vars, num_constraints);
-  } else if (check_infeasible(tableau, ent)) {
-    printf("INFEASIBLE!");
+  } else if (check_unbounded(tableau, ent)) {
+    printf("unbounded!");
   }
 }
 
 void
 help () {
-  printf("Simplex solver\nRuss Frank\n\nOptions:\n\t-v\tverbose mode\n\t-i\tinteractive mode (implies verbose mode)\n\t-t\tprint tableau at every step (also implies verbosemode)\n");
+  printf("Simplex solver\nRuss Frank\n\nOptions:\n\t-v\tverbose mode\n\t-i\tinteractive mode (implies verbose mode)\n\t-t\tprint tableau at every step (also implies verbosemode)\n\t-b\tmore human readable output\n");
 }
 
 int
@@ -471,10 +447,11 @@ main(int argc, char *argv[]) {
   srand(time(NULL));
 
   int arg;
-  while ((arg = getopt(argc, argv, "tvih")) != -1) switch(arg) {
+  while ((arg = getopt(argc, argv, "btvih")) != -1) switch(arg) {
     case 'v': verbosemode = true; break;
     case 'i': interactivemode = true; verbosemode = true; break;
     case 't': tableprint = true; verbosemode = true; break;
+    case 'b': humanoutput = true; break;
     case 'h': help(); exit(0); break;
   };
 
